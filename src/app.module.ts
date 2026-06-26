@@ -4,6 +4,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 
 import configs, { configSchema } from './configs';
 import { LoggerMiddleware } from './common/middlewares/logger.middleware';
+import { HealthModule } from './app/health/health.module';
 
 @Module({
   imports: [
@@ -21,6 +22,9 @@ import { LoggerMiddleware } from './common/middlewares/logger.middleware';
     CacheModule.register({
       isGlobal: true,
     }),
+
+    // app modules
+    HealthModule,
   ],
   controllers: [],
   providers: [],
