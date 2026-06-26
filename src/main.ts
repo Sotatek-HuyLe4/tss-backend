@@ -1,12 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 
 import { AppModule } from './app.module';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import { IConfigs } from './configs/configs.interface';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -54,7 +56,9 @@ async function bootstrap() {
   });
 
   // TODO: get config service
-  const port = 8000;
+  const configService: ConfigService<IConfigs> = app.get(ConfigService);
+  const port = configService.get('port');
+  const env = configService.get('env');
 
   // app logger
   const logger = new Logger(AppModule.name);
@@ -73,7 +77,7 @@ async function bootstrap() {
 
   // start server
   await app.listen(port, () => {
-    logger.log(`Server is running on port ${port}`);
+    logger.log(`Server is running in ${env} mode on port ${port}`);
   });
 }
 
