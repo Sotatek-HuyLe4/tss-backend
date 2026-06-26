@@ -1,7 +1,9 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { CacheModule } from '@nestjs/cache-manager';
 
 import configs, { configSchema } from './configs';
-import { ConfigModule } from '@nestjs/config';
+import { LoggerMiddleware } from './common/middlewares/logger.middleware';
 
 @Module({
   imports: [
@@ -14,8 +16,17 @@ import { ConfigModule } from '@nestjs/config';
         abortEarly: true,
       },
     }),
+
+    // cache module
+    CacheModule.register({
+      isGlobal: true,
+    }),
   ],
   controllers: [],
   providers: [],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggerMiddleware).forRoutes('*');
+  }
+}
