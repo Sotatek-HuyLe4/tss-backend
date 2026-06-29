@@ -55,7 +55,7 @@ async function bootstrap() {
     defaultVersion: '1',
   });
 
-  // TODO: get config service
+  // get config service
   const configService: ConfigService<IConfigs> = app.get(ConfigService);
   const port = configService.get('port');
   const env = configService.get('env');
