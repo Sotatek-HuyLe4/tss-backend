@@ -1,5 +1,9 @@
 import { HttpService } from '@nestjs/axios';
-import { Inject, Injectable } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 
@@ -28,21 +32,28 @@ export class TssService {
     }
 
     // create channel
-    const res = await this.httpService.axiosRef.post(
-      `${this.configService.get('tss.node1Url')}/channel`,
-      { expire },
-    );
-    const { channel_id: channelId } = res.data.data as NodeChannelResponse;
+    try {
+      const res = await this.httpService.axiosRef.post(
+        `${this.configService.get('tss.node1Url')}/channel`,
+        { expire },
+      );
+      const { channel_id: channelId } = res.data.data as NodeChannelResponse;
 
-    // save channel to cache
-    await this.cacheManager.set(
-      CACHE_CHANNEL_KEY,
-      { channel_id: channelId },
-      (expire - 5) * 60 * 1_000,
-    );
+      // save channel to cache
+      await this.cacheManager.set(
+        CACHE_CHANNEL_KEY,
+        { channel_id: channelId },
+        (expire - 5) * 60 * 1_000,
+      );
 
-    return {
-      channelId,
-    };
+      return {
+        channelId,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to create channel',
+        error.response.data,
+      );
+    }
   }
 }

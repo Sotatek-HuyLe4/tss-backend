@@ -4,7 +4,7 @@ export default {
   operations: {
     summary: 'Create TSS channel',
     description:
-      'Create a new TSS channel with the given expiration time, or return the cached channel if one already exists',
+      'Returns a cached channel ID if one already exists. Otherwise, creates a new channel on TSS node 1 with the given expiration time (in minutes), caches the channel ID with a TTL of (expire - 5) minutes, and returns the new channel ID.',
   },
   body: {
     schema: {
@@ -13,8 +13,10 @@ export default {
       properties: {
         expire: {
           type: 'number',
-          description: 'Channel expiration time in minutes',
+          description:
+            'Channel expiration time in minutes. Used when creating a new channel and to derive cache TTL as (expire - 5) minutes.',
           example: 30,
+          minimum: 1,
         },
       },
     },
@@ -22,7 +24,8 @@ export default {
   responses: [
     {
       status: HttpStatus.OK,
-      description: 'Channel created successfully',
+      description:
+        'Channel ID returned successfully from cache or after creating a new channel on TSS node 1',
       content: {
         'application/json': {
           example: {
@@ -37,15 +40,26 @@ export default {
       },
     },
     {
-      status: HttpStatus.INTERNAL_SERVER_ERROR,
-      description: 'Internal server error',
+      status: HttpStatus.BAD_REQUEST,
+      description: 'Invalid request body',
       content: {
         'application/json': {
           example: {
-            message: 'Internal server error',
-            data: null,
-            success: false,
-            timestamp: new Date().toISOString(),
+            statusCode: HttpStatus.BAD_REQUEST,
+            message: ['expire must be a positive number'],
+            error: 'Bad Request',
+          },
+        },
+      },
+    },
+    {
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      description: 'Failed to create channel on TSS node 1',
+      content: {
+        'application/json': {
+          example: {
+            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+            message: 'Failed to create channel',
           },
         },
       },
