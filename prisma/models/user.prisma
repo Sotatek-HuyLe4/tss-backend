@@ -1,0 +1,8 @@
+model User {
+    id        String   @id @default(uuid())
+    name      String   @db.VarChar(255)
+    address   String   @db.VarChar(255)
+    balance   String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
