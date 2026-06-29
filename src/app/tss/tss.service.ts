@@ -10,6 +10,7 @@ import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 import { ChannelDto } from './dtos/channel.dto';
 import { NodeChannelResponse } from './types';
 import { CACHE_CHANNEL_KEY } from './constant';
+import { InitVaultDto } from './dtos/init.dto';
 
 @Injectable()
 export class TssService {
@@ -52,7 +53,45 @@ export class TssService {
     } catch (error) {
       throw new InternalServerErrorException(
         'Failed to create channel',
-        error.response.data,
+        error?.response?.data?.error,
+      );
+    }
+  }
+
+  async initVault(initVaultDto: InitVaultDto) {
+    const { homes, vault, password, listenAddresses } = initVaultDto;
+    const nodeUrls = [
+      this.configService.get('tss.node1Url'),
+      this.configService.get('tss.node2Url'),
+      this.configService.get('tss.node3Url'),
+    ];
+    const homesLength = homes.length;
+
+    let payloads: any[] = [];
+    for (let i = 0; i < homesLength; i++) {
+      payloads.push({
+        home: homes[i],
+        vault,
+        moniker: homes[i],
+        password,
+        listen_address: listenAddresses[i],
+      });
+    }
+
+    try {
+      await Promise.all(
+        payloads.map((payload, index) =>
+          this.httpService.axiosRef.post(`${nodeUrls[index]}/init`, payload),
+        ),
+      );
+
+      return {
+        vault,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to initialize vault',
+        error?.response?.data?.error,
       );
     }
   }

@@ -3,8 +3,8 @@ import { ApiTags } from '@nestjs/swagger';
 
 import { SwaggerDecorator } from '../../common/decorators/swagger.decorator';
 import { TssService } from './tss.service';
-import { ChannelDto } from './dtos/channel.dto';
-import { createChannelSwagger } from './swagger';
+import { ChannelDto, InitVaultDto } from './dtos';
+import { createChannelSwagger, initVaultSwagger } from './swagger';
 
 @Controller('tss')
 @ApiTags('TSS')
@@ -23,6 +23,21 @@ export class TssController {
     return {
       data,
       message: 'Channel created successfully',
+    };
+  }
+
+  @Post('init-vault')
+  @SwaggerDecorator({
+    operations: initVaultSwagger.operations,
+    body: initVaultSwagger.body,
+    responses: initVaultSwagger.responses,
+  })
+  async initVault(@Body() initVaultDto: InitVaultDto) {
+    const data = await this.tssService.initVault(initVaultDto);
+
+    return {
+      data,
+      message: 'Vault initialized successfully',
     };
   }
 }
