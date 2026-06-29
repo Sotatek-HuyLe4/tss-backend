@@ -7,6 +7,7 @@ import configs, { configSchema } from './configs';
 import { LoggerMiddleware } from './common/middlewares/logger.middleware';
 import { HealthModule } from './app/health/health.module';
 import { PrismaModule } from './services/prisma/prisma.module';
+import { TssModule } from './app/tss/tss.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { PrismaModule } from './services/prisma/prisma.module';
 
     // app modules
     HealthModule,
+    TssModule,
   ],
   controllers: [],
   providers: [],

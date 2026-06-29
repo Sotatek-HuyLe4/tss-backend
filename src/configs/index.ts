@@ -5,12 +5,17 @@ export const configSchema = Joi.object({
   NODE_ENV: Joi.string()
     .valid('development', 'production', 'test')
     .default('development'),
-  PORT: Joi.number().default(8000),
+  PORT: Joi.number().default(8080),
 
   // database
   DATABASE_URL: Joi.string().default(
     'postgresql://admin:root@localhost:5432/tss_backend_db',
   ),
+
+  // tss
+  TSS_NODE1_URL: Joi.string().default('http://localhost:8000'),
+  TSS_NODE2_URL: Joi.string().default('http://localhost:8001'),
+  TSS_NODE3_URL: Joi.string().default('http://localhost:8002'),
 });
 
 export default () => ({
@@ -20,4 +25,11 @@ export default () => ({
 
   // database
   databaseUrl: process.env.DATABASE_URL,
+
+  // tss
+  tss: {
+    node1Url: process.env.TSS_NODE1_URL,
+    node2Url: process.env.TSS_NODE2_URL,
+    node3Url: process.env.TSS_NODE3_URL,
+  },
 });

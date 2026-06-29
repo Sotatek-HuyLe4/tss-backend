@@ -5,4 +5,11 @@ export interface IConfigs {
 
   // database
   databaseUrl: string;
+
+  // tss
+  tss: {
+    node1Url: string;
+    node2Url: string;
+    node3Url: string;
+  };
 }
