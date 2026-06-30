@@ -8,6 +8,7 @@ import { LoggerMiddleware } from './common/middlewares/logger.middleware';
 import { HealthModule } from './app/health/health.module';
 import { PrismaModule } from './services/prisma/prisma.module';
 import { TssModule } from './app/tss/tss.module';
+import { EvmModule } from './services/evm/evm.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { TssModule } from './app/tss/tss.module';
 
     // services module
     PrismaModule,
+    EvmModule,
 
     // app modules
     HealthModule,

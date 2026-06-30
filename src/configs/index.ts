@@ -23,6 +23,9 @@ export const configSchema = Joi.object({
   TSS_NODE3_URL: Joi.string().default('http://localhost:8002'),
   TSS_NODE3_LISTEN_ADDRESS: Joi.string().default('/ip4/0.0.0.0/tcp/30000'),
   TSS_NODE3_HOME: Joi.string().default('node3'),
+
+  // rpc urls
+  RPC_EVM_URL: Joi.string().default('http://localhost:8545'),
 });
 
 export default () =>
@@ -52,4 +55,9 @@ export default () =>
         home: process.env.TSS_NODE3_HOME,
       },
     ],
+
+    // rpc urls
+    rpcUrls: {
+      evm: process.env.RPC_EVM_URL,
+    },
   }) as IConfigs;

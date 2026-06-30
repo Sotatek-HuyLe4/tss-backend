@@ -8,6 +8,11 @@ export interface IConfigs {
 
   // tss
   tss: ITssNode[];
+
+  // rpc urls
+  rpcUrls: {
+    evm: string;
+  };
 }
 
 export interface ITssNode {
