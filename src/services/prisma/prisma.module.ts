@@ -1,11 +1,17 @@
-import { Inject, Logger, Module, OnModuleDestroy } from '@nestjs/common';
+import {
+  Global,
+  Inject,
+  Logger,
+  Module,
+  OnModuleDestroy,
+} from '@nestjs/common';
 
 import { prismaProvider } from './prisma.provider';
 import { PrismaClient } from '../../../generated/prisma/client';
 import { PRISMA_SERVICE } from './constant';
 
+@Global()
 @Module({
-  imports: [],
   providers: [prismaProvider],
   exports: [prismaProvider],
 })

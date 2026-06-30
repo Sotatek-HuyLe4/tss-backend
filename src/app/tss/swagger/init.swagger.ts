@@ -4,25 +4,17 @@ export default {
   operations: {
     summary: 'Initialize TSS vault',
     description:
-      'Initializes the vault on all three TSS nodes in parallel. Each index in `homes` and `listenAddresses` maps to a TSS node (node 1, node 2, node 3) and is sent as a POST /init payload with `home`, `vault`, `moniker`, `password`, and `listen_address`.',
+      'Checks whether the vault name already exists in the database. If not, initializes the vault on all configured TSS nodes in parallel by sending POST /init to each node. Per-node `home`, `moniker`, and `listen_address` values are read from server config; the request only supplies `vault` and `password`. On success, persists the vault to the database and returns the vault name.',
   },
   body: {
     schema: {
       type: 'object',
-      required: ['homes', 'vault', 'password', 'listenAddresses'],
+      required: ['vault', 'password'],
       properties: {
-        homes: {
-          type: 'array',
-          description:
-            'Home directory paths for each TSS node. Index 0 maps to node 1, index 1 to node 2, and index 2 to node 3.',
-          items: {
-            type: 'string',
-          },
-          example: ['node1', 'node2', 'node3'],
-        },
         vault: {
           type: 'string',
-          description: 'Vault name or path shared across all TSS nodes',
+          description:
+            'Vault name shared across all TSS nodes. Must be unique in the database.',
           example: 'alice',
         },
         password: {
@@ -31,26 +23,14 @@ export default {
           example: '123456789',
           minLength: 9,
         },
-        listenAddresses: {
-          type: 'array',
-          description:
-            'Listen addresses for each TSS node. Must align by index with `homes`.',
-          items: {
-            type: 'string',
-          },
-          example: [
-            '/ip4/0.0.0.0/tcp/10000',
-            '/ip4/0.0.0.0/tcp/20000',
-            '/ip4/0.0.0.0/tcp/30000',
-          ],
-        },
       },
     },
   },
   responses: [
     {
       status: HttpStatus.OK,
-      description: 'Vault initialized successfully on all TSS nodes',
+      description:
+        'Vault initialized successfully on all TSS nodes and saved to the database',
       content: {
         'application/json': {
           example: {
@@ -66,13 +46,29 @@ export default {
     },
     {
       status: HttpStatus.BAD_REQUEST,
-      description: 'Invalid request body',
+      description:
+        'Invalid request body or vault name already exists in the database',
       content: {
         'application/json': {
-          example: {
-            statusCode: HttpStatus.BAD_REQUEST,
-            message: ['password must be longer than or equal to 9 characters'],
-            error: 'Bad Request',
+          examples: {
+            vaultAlreadyExists: {
+              summary: 'Vault already exists',
+              value: {
+                statusCode: HttpStatus.BAD_REQUEST,
+                message: 'Vault already exists',
+                error: 'Bad Request',
+              },
+            },
+            validationError: {
+              summary: 'Validation error',
+              value: {
+                statusCode: HttpStatus.BAD_REQUEST,
+                message: [
+                  'password must be longer than or equal to 9 characters',
+                ],
+                error: 'Bad Request',
+              },
+            },
           },
         },
       },

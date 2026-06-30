@@ -7,9 +7,11 @@ export interface IConfigs {
   databaseUrl: string;
 
   // tss
-  tss: {
-    node1Url: string;
-    node2Url: string;
-    node3Url: string;
-  };
+  tss: ITssNode[];
+}
+
+export interface ITssNode {
+  url: string;
+  listenAddress: string;
+  home: string;
 }

@@ -1,5 +1,6 @@
 import { HttpService } from '@nestjs/axios';
 import {
+  BadRequestException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -11,6 +12,9 @@ import { ChannelDto } from './dtos/channel.dto';
 import { NodeChannelResponse } from './types';
 import { CACHE_CHANNEL_KEY } from './constant';
 import { InitVaultDto } from './dtos/init.dto';
+import { ITssNode } from '../../configs/configs.interface';
+import { PRISMA_SERVICE } from '../../services/prisma/constant';
+import { PrismaClient } from '../../../generated/prisma/client';
 
 @Injectable()
 export class TssService {
@@ -18,6 +22,7 @@ export class TssService {
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    @Inject(PRISMA_SERVICE) private prismaService: PrismaClient,
   ) {}
 
   async createChannel(channelDto: ChannelDto) {
@@ -59,31 +64,48 @@ export class TssService {
   }
 
   async initVault(initVaultDto: InitVaultDto) {
-    const { homes, vault, password, listenAddresses } = initVaultDto;
-    const nodeUrls = [
-      this.configService.get('tss.node1Url'),
-      this.configService.get('tss.node2Url'),
-      this.configService.get('tss.node3Url'),
-    ];
-    const homesLength = homes.length;
+    const { vault, password } = initVaultDto;
+    const nodeConfigs = this.configService.get('tss') as ITssNode[];
+    const nodeConfigsLength = nodeConfigs.length;
+
+    // check if vault already exists
+    const vaultFromDb = await this.prismaService.user.findFirst({
+      where: { name: vault },
+    });
+    if (vaultFromDb) {
+      throw new BadRequestException('Vault already exists');
+    }
 
     let payloads: any[] = [];
-    for (let i = 0; i < homesLength; i++) {
+    for (let i = 0; i < nodeConfigsLength; i++) {
       payloads.push({
-        home: homes[i],
+        home: nodeConfigs[i].home,
         vault,
-        moniker: homes[i],
+        moniker: nodeConfigs[i].home,
         password,
-        listen_address: listenAddresses[i],
+        listen_address: nodeConfigs[i].listenAddress,
       });
     }
 
     try {
+      // try to initialize vault on all tss nodes
       await Promise.all(
         payloads.map((payload, index) =>
-          this.httpService.axiosRef.post(`${nodeUrls[index]}/init`, payload),
+          this.httpService.axiosRef.post(
+            `${nodeConfigs[index].url}/init`,
+            payload,
+          ),
         ),
       );
+
+      // save vault to database
+      await this.prismaService.user.create({
+        data: {
+          name: vault,
+          address: '',
+          balance: '0',
+        },
+      });
 
       return {
         vault,
