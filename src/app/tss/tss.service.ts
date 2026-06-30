@@ -118,8 +118,82 @@ export class TssService {
         vault,
       };
     } catch (error) {
+      this.logger.error(error);
+
       throw new InternalServerErrorException(
         'Failed to initialize vault',
+        error?.response?.data?.error,
+      );
+    }
+  }
+
+  async generateKey(generateKeyDto: GenerateKeyDto) {
+    const { vault, password, parties, threshold, channelId } = generateKeyDto;
+    const nodeConfigs = this.configService.get('tss') as ITssNode[];
+    const nodeConfigsLength = nodeConfigs.length;
+
+    // check if parties is equal to node configs length
+    if (parties !== nodeConfigsLength) {
+      throw new BadRequestException(
+        `Parties must be equal to the number of TSS nodes: ${nodeConfigsLength}`,
+      );
+    }
+
+    // check if threshold is greater than parties
+    if (threshold > parties) {
+      throw new BadRequestException(
+        'Threshold must be less than or equal to the number of parties',
+      );
+    }
+
+    // check if vault exists
+    const user = await this.prismaService.user.findFirst({
+      where: { name: vault },
+    });
+    if (!user) {
+      throw new BadRequestException('Vault does not exist');
+    }
+
+    let payloads: any[] = [];
+    for (let i = 0; i < nodeConfigsLength; i++) {
+      payloads.push({
+        home: nodeConfigs[i].home,
+        vault,
+        password,
+        parties,
+        threshold,
+        channel_id: channelId,
+      });
+    }
+
+    try {
+      // try to generate key on all tss nodes
+      const res = await Promise.all(
+        payloads.map((payload, index) =>
+          this.httpService.axiosRef.post(
+            `${nodeConfigs[index].url}/keygen`,
+            payload,
+          ),
+        ),
+      );
+
+      const { address, pubkey } = res[0].data.data;
+
+      // save address to database
+      await this.prismaService.user.update({
+        where: { id: user.id },
+        data: { address },
+      });
+
+      return {
+        address,
+        pubkey,
+      };
+    } catch (error) {
+      this.logger.error(error);
+
+      throw new InternalServerErrorException(
+        'Failed to generate key',
         error?.response?.data?.error,
       );
     }

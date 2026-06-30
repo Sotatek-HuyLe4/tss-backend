@@ -4,7 +4,12 @@ import { ApiTags } from '@nestjs/swagger';
 import { SwaggerDecorator } from '../../common/decorators/swagger.decorator';
 import { TssService } from './tss.service';
 import { ChannelDto, InitVaultDto } from './dtos';
-import { createChannelSwagger, initVaultSwagger } from './swagger';
+import {
+  createChannelSwagger,
+  initVaultSwagger,
+  generateKeySwagger,
+} from './swagger';
+import { GenerateKeyDto } from './dtos/generateKey.dto';
 
 @Controller('tss')
 @ApiTags('TSS')
@@ -38,6 +43,21 @@ export class TssController {
     return {
       data,
       message: 'Vault initialized successfully',
+    };
+  }
+
+  @Post('generate-key')
+  @SwaggerDecorator({
+    operations: generateKeySwagger.operations,
+    body: generateKeySwagger.body,
+    responses: generateKeySwagger.responses,
+  })
+  async generateKey(@Body() generateKeyDto: GenerateKeyDto) {
+    const data = await this.tssService.generateKey(generateKeyDto);
+
+    return {
+      data,
+      message: 'Key generated successfully',
     };
   }
 }
