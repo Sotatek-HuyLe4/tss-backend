@@ -4,6 +4,7 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
@@ -15,9 +16,12 @@ import { InitVaultDto } from './dtos/init.dto';
 import { ITssNode } from '../../configs/configs.interface';
 import { PRISMA_SERVICE } from '../../services/prisma/constant';
 import { PrismaClient } from '../../../generated/prisma/client';
+import { GenerateKeyDto } from './dtos/generateKey.dto';
 
 @Injectable()
 export class TssService {
+  private readonly logger = new Logger(TssService.name);
+
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
@@ -39,8 +43,9 @@ export class TssService {
 
     // create channel
     try {
+      const nodeConfig = this.configService.get('tss')[0] as ITssNode;
       const res = await this.httpService.axiosRef.post(
-        `${this.configService.get('tss.node1Url')}/channel`,
+        `${nodeConfig.url}/channel`,
         { expire },
       );
       const { channel_id: channelId } = res.data.data as NodeChannelResponse;
@@ -56,6 +61,8 @@ export class TssService {
         channelId,
       };
     } catch (error) {
+      this.logger.error(error);
+
       throw new InternalServerErrorException(
         'Failed to create channel',
         error?.response?.data?.error,
