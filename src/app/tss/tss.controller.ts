@@ -8,8 +8,10 @@ import {
   createChannelSwagger,
   initVaultSwagger,
   generateKeySwagger,
+  signSwagger,
 } from './swagger';
 import { GenerateKeyDto } from './dtos/generateKey.dto';
+import { SignDto } from './dtos/sign.dto';
 
 @Controller('tss')
 @ApiTags('TSS')
@@ -58,6 +60,21 @@ export class TssController {
     return {
       data,
       message: 'Key generated successfully',
+    };
+  }
+
+  @Post('sign')
+  @SwaggerDecorator({
+    operations: signSwagger.operations,
+    body: signSwagger.body,
+    responses: signSwagger.responses,
+  })
+  async sign(@Body() signDto: SignDto) {
+    const data = await this.tssService.sign(signDto);
+
+    return {
+      data,
+      message: 'Signature generated successfully',
     };
   }
 }

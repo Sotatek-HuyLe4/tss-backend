@@ -17,6 +17,8 @@ import { ITssNode } from '../../configs/configs.interface';
 import { PRISMA_SERVICE } from '../../services/prisma/constant';
 import { PrismaClient } from '../../../generated/prisma/client';
 import { GenerateKeyDto } from './dtos/generateKey.dto';
+import { SignDto } from './dtos/sign.dto';
+import { EvmService } from '../../services/evm/evm.service';
 
 @Injectable()
 export class TssService {
@@ -25,6 +27,7 @@ export class TssService {
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
+    private readonly evmService: EvmService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     @Inject(PRISMA_SERVICE) private prismaService: PrismaClient,
   ) {}
@@ -176,7 +179,6 @@ export class TssService {
           ),
         ),
       );
-
       const { address, pubkey } = res[0].data.data;
 
       // save address to database
@@ -194,6 +196,61 @@ export class TssService {
 
       throw new InternalServerErrorException(
         'Failed to generate key',
+        error?.response?.data?.error,
+      );
+    }
+  }
+
+  async sign(signDto: SignDto) {
+    const { vault, password, channelId, toAddress, amount } = signDto;
+    const nodeConfigs = this.configService.get('tss').slice(0, 2) as ITssNode[];
+    const nodeConfigsLength = nodeConfigs.length;
+
+    // check if vault exists
+    const user = await this.prismaService.user.findFirst({
+      where: { name: vault },
+    });
+    if (!user) {
+      throw new BadRequestException('Vault does not exist');
+    }
+
+    let payloads: any[] = [];
+    for (let i = 0; i < nodeConfigsLength; i++) {
+      payloads.push({
+        home: nodeConfigs[i].home,
+        vault,
+        password,
+        channel_id: channelId,
+        rpc_url: this.configService.get('rpcUrls.evm'),
+        to_address: toAddress,
+        amount,
+      });
+    }
+
+    try {
+      // try to sign on all tss nodes
+      const res = await Promise.all(
+        payloads.map((payload, index) =>
+          this.httpService.axiosRef.post(
+            `${nodeConfigs[index].url}/sign`,
+            payload,
+          ),
+        ),
+      );
+      const { raw_tx: rawTx } = res[0].data.data;
+
+      // try to broadcast raw tx to evm network
+      const tx = await this.evmService.broadcastTransaction(rawTx);
+      await tx.wait();
+
+      return {
+        txHash: tx.hash,
+      };
+    } catch (error) {
+      this.logger.error(error);
+
+      throw new InternalServerErrorException(
+        'Failed to sign',
         error?.response?.data?.error,
       );
     }
