@@ -1,98 +1,258 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# TSS Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A backend service built with NestJS and TypeScript for orchestrating Threshold Signature Scheme (TSS) operations. It acts as a gateway between the frontend and multiple TSS nodes, managing vault lifecycle (initialization, key generation, signing) and EVM transaction broadcasting.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Features
 
-## Description
+- NestJS v11 with modular architecture (`Health`, `TSS`, `User`)
+- PostgreSQL integration via Prisma ORM
+- Multi-node TSS orchestration (channel, vault init, keygen, sign)
+- EVM integration with ethers.js (transaction broadcast and balance lookup)
+- Background scheduler to periodically sync vault balances from the EVM network
+- In-memory cache for TSS channel reuse
+- Request validation with `class-validator` + global `ValidationPipe`
+- Standardized API response wrapper via interceptor
+- Swagger/OpenAPI documentation
+- Security middlewares: `helmet`, `compression`, `cookie-parser`, CORS
+- Docker Compose setup for local PostgreSQL
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Tech Stack
 
-## Project setup
+### Core
 
-```bash
-$ yarn install
+- NestJS
+- TypeScript
+- Node.js (recommend Node.js 20+)
+
+### Data & ORM
+
+- PostgreSQL
+- Prisma
+
+### Blockchain & TSS
+
+- ethers.js for EVM RPC interaction
+- `@nestjs/axios` for HTTP communication with TSS nodes
+
+### API & Validation
+
+- Swagger/OpenAPI via `@nestjs/swagger`
+- `class-validator` + `class-transformer`
+- `Joi` for environment variable validation
+
+### Infrastructure & Utilities
+
+- Docker Compose (local database)
+- ESLint + Prettier + Jest
+
+## Project Structure
+
+```
+tss-backend/
+├── src/
+│   ├── app/
+│   │   ├── health/                # Health check endpoint
+│   │   ├── tss/                   # TSS channel, vault, keygen, and sign endpoints
+│   │   └── user/                  # Vault (user) listing and detail endpoints
+│   ├── common/
+│   │   ├── decorators/            # Custom Swagger decorator
+│   │   ├── interceptors/          # Standard response formatter
+│   │   └── middlewares/           # Request logging middleware
+│   ├── configs/                   # Joi schema + typed runtime config mapping
+│   ├── services/
+│   │   ├── evm/                   # ethers.js JsonRpcProvider wrapper
+│   │   ├── prisma/                # Prisma client provider and DI token
+│   │   └── schedule/              # Background vault balance sync
+│   ├── app.module.ts              # Root module
+│   └── main.ts                    # Bootstrap, middleware, versioning, swagger
+├── prisma/
+│   ├── models/                    # Prisma model definitions (User/vault)
+│   └── migrations/                # Database migrations
+├── test/                          # Jest e2e scaffold
+├── docker-compose.yml             # PostgreSQL local container
+├── .env.example                   # Environment variables template
+├── package.json
+└── README.md
 ```
 
-## Compile and run the project
+## Prerequisites
+
+- Node.js 20+
+- npm or yarn
+- Docker + Docker Compose (for local PostgreSQL)
+- Running TSS nodes (configured via environment variables)
+- EVM RPC endpoint (e.g. local Hardhat/Anvil or testnet node)
+
+## Environment Variables
+
+Create a `.env` file in the project root (you can copy from `.env.example`):
 
 ```bash
-# development
-$ yarn run start
-
-# watch mode
-$ yarn run start:dev
-
-# production mode
-$ yarn run start:prod
+cp .env.example .env
 ```
 
-## Run tests
+Default variables:
+
+```env
+# environment
+NODE_ENV=development
+PORT=8080
+
+# database
+DATABASE_URL=postgresql://admin:root@localhost:5432/tss_backend_db
+
+# tss
+TSS_NODE1_URL="http://localhost:8000"
+TSS_NODE1_LISTEN_ADDRESS="/ip4/0.0.0.0/tcp/10000"
+TSS_NODE1_HOME="node1"
+TSS_NODE2_URL="http://localhost:8001"
+TSS_NODE2_LISTEN_ADDRESS="/ip4/0.0.0.0/tcp/20000"
+TSS_NODE2_HOME="node2"
+TSS_NODE3_URL="http://localhost:8002"
+TSS_NODE3_LISTEN_ADDRESS="/ip4/0.0.0.0/tcp/30000"
+TSS_NODE3_HOME="node3"
+
+# rpc
+RPC_EVM_URL="http://localhost:8545"
+```
+
+## Installation
 
 ```bash
-# unit tests
-$ yarn run test
-
-# e2e tests
-$ yarn run test:e2e
-
-# test coverage
-$ yarn run test:cov
+yarn install
 ```
 
-## Deployment
+## Start Project
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### 1) Start PostgreSQL (Docker)
 
 ```bash
-$ yarn install -g @nestjs/mau
-$ mau deploy
+yarn db:start
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+To stop and remove volumes:
 
-## Resources
+```bash
+yarn db:stop
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+### 2) Run Database Migrations
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+```bash
+yarn db:generate
+yarn db:migrate
+```
 
-## Support
+For production deployments:
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```bash
+yarn db:deploy
+```
 
-## Stay in touch
+### 3) Run API
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Development mode:
 
-## License
+```bash
+yarn start:dev
+```
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Production mode:
+
+```bash
+yarn build
+yarn start:prod
+```
+
+### 4) Open Swagger docs
+
+When the server is running:
+
+- API docs: http://localhost:8080/api
+
+The app enables URI versioning (`v1`), so endpoints are prefixed with `/v1`.
+
+## Main Endpoints
+
+### Health
+
+- `GET /v1/health`
+
+### TSS
+
+- `POST /v1/tss/channel` — create a TSS communication channel (cached until expiry)
+- `POST /v1/tss/init-vault` — initialize a new vault across all TSS nodes
+- `POST /v1/tss/generate-key` — run distributed key generation for a vault
+- `POST /v1/tss/sign` — sign and broadcast an EVM transaction from a vault
+
+### Users (Vaults)
+
+- `GET /v1/users` — list all vaults with address and balance
+- `GET /v1/users/:id` — get a vault by ID
+
+## TSS Workflow
+
+A typical vault setup and signing flow:
+
+1. **Create channel** — `POST /v1/tss/channel` with `{ "expire": <minutes> }` to obtain a `channelId`.
+2. **Initialize vault** — `POST /v1/tss/init-vault` with `{ "vault": "<name>", "password": "<password>" }` on all configured TSS nodes.
+3. **Generate key** — `POST /v1/tss/generate-key` with vault credentials, `parties` (must match the number of TSS nodes), `threshold`, and `channelId`.
+4. **Sign transaction** — `POST /v1/tss/sign` with vault credentials, `channelId`, `toAddress`, and `amount`. The signed raw transaction is broadcast to the EVM network.
+
+## Available Scripts
+
+- `yarn db:start` — start PostgreSQL container
+- `yarn db:stop` — stop PostgreSQL and remove volume
+- `yarn db:generate` — generate Prisma client
+- `yarn db:migrate` — run Prisma migrations (development)
+- `yarn db:deploy` — apply migrations (production)
+- `yarn start` — start Nest app
+- `yarn start:dev` — start with watch mode
+- `yarn start:debug` — start in debug + watch mode
+- `yarn start:prod` — run compiled output
+- `yarn build` — build TypeScript to `dist`
+- `yarn lint` — run ESLint with auto-fix
+- `yarn format` — run Prettier on `src` and `test`
+- `yarn test` — run unit tests
+- `yarn test:e2e` — run e2e tests
+- `yarn test:cov` — run test coverage
+
+## Response Format
+
+The global response interceptor wraps successful responses in this shape:
+
+```json
+{
+  "success": true,
+  "data": {},
+  "message": "Some message",
+  "timestamp": "2026-01-01T00:00:00.000Z"
+}
+```
+
+## Background Jobs
+
+On startup, the `ScheduleModule` runs a background loop that fetches EVM balances for all vaults with a registered address and updates them in the database every 5 seconds.
+
+## Security Notes
+
+- `helmet`, `compression`, and cookie parser are enabled globally
+- Request bodies are validated and sanitized via `ValidationPipe` (`whitelist: true`)
+- Vault passwords are forwarded to TSS nodes over HTTP — ensure TSS nodes are reachable only over trusted networks in production
+- CORS is currently set to `origin: '*'` — tighten this before production deployment
+
+## Example-Only Disclaimer
+
+This repository is a **service layer** for TSS orchestration, not a complete production treasury system.
+
+Before shipping to real users, you should at least:
+
+- add authentication and authorization for API endpoints
+- add structured logging, monitoring, and alerting
+- improve error model and exception filters
+- harden security (rate limits, stricter CORS, secret management, audit logging)
+- add full test coverage (unit, integration, e2e)
+- add CI/CD and deployment strategy
+- add migration/data lifecycle/backup strategy
+- secure communication between this backend and TSS nodes (TLS, mTLS, or private network)
+- review TSS threshold and party configuration for your security requirements
