@@ -10,6 +10,7 @@ import { PrismaModule } from './services/prisma/prisma.module';
 import { TssModule } from './app/tss/tss.module';
 import { EvmModule } from './services/evm/evm.module';
 import { ScheduleModule } from './services/schedule/schedule.module';
+import { UserModule } from './app/user/user.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { ScheduleModule } from './services/schedule/schedule.module';
     // app modules
     HealthModule,
     TssModule,
+    UserModule,
   ],
   controllers: [],
   providers: [],
