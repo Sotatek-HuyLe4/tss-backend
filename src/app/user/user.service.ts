@@ -10,7 +10,9 @@ export class UserService {
   ) {}
 
   async getAllUsers() {
-    const users = await this.prismaService.user.findMany();
+    const users = await this.prismaService.user.findMany({
+      orderBy: { createdAt: 'asc' },
+    });
 
     return {
       users,

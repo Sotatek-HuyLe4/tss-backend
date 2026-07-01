@@ -113,7 +113,7 @@ export class TssService {
         data: {
           name: vault,
           address: '',
-          balance: '0',
+          balance: '',
         },
       });
 
