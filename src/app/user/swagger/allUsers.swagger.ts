@@ -20,7 +20,7 @@ export default {
                   id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
                   name: 'alice',
                   address: '0x1234567890abcdef1234567890abcdef12345678',
-                  balance: '1000000000000000000',
+                  balance: '1',
                   createdAt: '2026-06-29T10:00:00.000Z',
                   updatedAt: '2026-06-29T12:00:00.000Z',
                 },

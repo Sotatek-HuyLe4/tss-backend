@@ -1,16 +1,16 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
 import { SwaggerDecorator } from '../../common/decorators/swagger.decorator';
 import { UserService } from './user.service';
-import { allUsersSwagger } from './swagger';
+import { allUsersSwagger, userByIdSwagger } from './swagger';
 
-@Controller('user')
-@ApiTags('User')
+@Controller('users')
+@ApiTags('Users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Get('all')
+  @Get('')
   @SwaggerDecorator({
     operations: allUsersSwagger.operations,
     responses: allUsersSwagger.responses,
@@ -21,6 +21,21 @@ export class UserController {
     return {
       data,
       message: 'All users fetched successfully',
+    };
+  }
+
+  @Get(':id')
+  @SwaggerDecorator({
+    operations: userByIdSwagger.operations,
+    params: userByIdSwagger.params,
+    responses: userByIdSwagger.responses,
+  })
+  async getUserById(@Param('id') id: string) {
+    const data = await this.userService.getUserById(id);
+
+    return {
+      data,
+      message: 'User fetched successfully',
     };
   }
 }
