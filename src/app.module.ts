@@ -9,6 +9,7 @@ import { HealthModule } from './app/health/health.module';
 import { PrismaModule } from './services/prisma/prisma.module';
 import { TssModule } from './app/tss/tss.module';
 import { EvmModule } from './services/evm/evm.module';
+import { ScheduleModule } from './services/schedule/schedule.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { EvmModule } from './services/evm/evm.module';
     // services module
     PrismaModule,
     EvmModule,
+    ScheduleModule,
 
     // app modules
     HealthModule,
